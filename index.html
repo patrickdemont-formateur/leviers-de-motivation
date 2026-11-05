@@ -14,7 +14,15 @@
 
   <header class="site-header">
     <div class="container header-inner">
-      <p class="brand">Leviers de motivation</p>
+      <div class="header-left">
+        <a class="icon-btn" id="admin-link" href="#admin" hidden aria-label="Administration, paramètres et aide" title="Administration, paramètres et aide">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path fill="currentColor" fill-rule="evenodd" d="M12 4.8a7.2 7.2 0 1 0 0 14.4a7.2 7.2 0 1 0 0-14.4z M12 8.8a3.2 3.2 0 1 0 0 6.4a3.2 3.2 0 1 0 0-6.4z"></path>
+            <circle cx="12" cy="12" r="8.6" fill="none" stroke="currentColor" stroke-width="4.2" stroke-dasharray="2.8 3.9544" stroke-dashoffset="1.4" transform="rotate(-90 12 12)"></circle>
+          </svg>
+        </a>
+        <p class="brand">Leviers de motivation</p>
+      </div>
       <p class="badge" id="participant-badge" hidden></p>
     </div>
   </header>
@@ -49,6 +57,8 @@
   </dialog>
 
   <script src="data.js"></script>
+  <script src="qr.js"></script>
+  <script src="admin.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

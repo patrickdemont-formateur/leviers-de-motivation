@@ -119,12 +119,51 @@
   }
 
   /* ------------------------------------------------------------------
+     Routage : sans paramètre p -> page d'accueil de l'animateur (admin.js)
+               avec p valide   -> parcours du participant
+               avec p invalide -> message d'erreur
+     ------------------------------------------------------------------ */
+  var NAME_MAX = 20;
+
+  function cleanName(v) {
+    return String(v === null || v === undefined ? "" : v)
+      .replace(/[\u0000-\u001f\u007f~]/g, "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, NAME_MAX);
+  }
+
+  var params;
+  try { params = new URLSearchParams(window.location.search); }
+  catch (e) { params = { has: function () { return false; }, get: function () { return null; } }; }
+
+  if (!params.has("p")) {
+    if (window.LM_ADMIN && typeof window.LM_ADMIN.start === "function") {
+      window.LM_ADMIN.start({
+        D: D, root: root, h: h, append: append, toast: toast,
+        confirmAction: confirmAction, copyText: copyText,
+        cleanName: cleanName, NAME_MAX: NAME_MAX
+      });
+    } else {
+      root.textContent = "Erreur : le fichier admin.js n’a pas pu être chargé.";
+    }
+    return;
+  }
+
+  /* ------------------------------------------------------------------
      Participant (paramètre ?p=A|B|C)
      ------------------------------------------------------------------ */
-  var P = "";
-  try { P = (new URLSearchParams(window.location.search).get("p") || "").trim().toUpperCase(); }
-  catch (e) { P = ""; }
+  var P = (params.get("p") || "").trim().toUpperCase();
   if (D.participants.indexOf(P) === -1) { P = null; }
+
+  /* Prénoms facultatifs transmis par le lien : ?n=Prénom A~Prénom B~Prénom C */
+  var NAMES = { A: "", B: "", C: "" };
+  (function () {
+    var parts = (params.get("n") || "").split("~");
+    D.participants.forEach(function (q, i) { NAMES[q] = cleanName(parts[i] || ""); });
+  })();
+
+  function who(q) { return NAMES[q] ? NAMES[q] : "participant " + q; }
 
   var badge = document.getElementById("participant-badge");
 
@@ -143,7 +182,7 @@
   }
 
   if (badge) {
-    badge.textContent = "Participant " + P;
+    badge.textContent = NAMES[P] ? NAMES[P] + " (participant " + P + ")" : "Participant " + P;
     badge.hidden = false;
   }
 
@@ -203,11 +242,18 @@
   /* ------------------------------------------------------------------
      Observations (rôle observateur)
      ------------------------------------------------------------------ */
+  var GAUGE_MAX = (D.grille && D.grille.max) || 5;
+
   function getObs(round) {
     var k = String(round);
     if (!isPlainObject(state.obs[k])) { state.obs[k] = {}; }
     var o = state.obs[k];
     if (!isPlainObject(o.grid)) { o.grid = {}; }
+    /* Ne garde que des compteurs valides (les anciens formats sont ignorés) */
+    Object.keys(o.grid).forEach(function (key) {
+      var v = o.grid[key];
+      if (typeof v !== "number" || v % 1 !== 0 || v < 1 || v > GAUGE_MAX) { delete o.grid[key]; }
+    });
     D.champsObservateur.forEach(function (c) {
       if (typeof o[c.id] !== "string") { o[c.id] = ""; }
     });
@@ -374,6 +420,16 @@
       "le stockage local est indisponible sur ce navigateur (navigation privée ?). Votre progression ne sera pas conservée si vous actualisez la page.");
   }
 
+  function rolesList(round) {
+    var items = ["manager", "collaborateur", "observateur"].map(function (role) {
+      var q = D.participants.filter(function (x) { return D.rotation[round][x] === role; })[0];
+      return h("li", null,
+        h("strong", { text: D.roles[role].label + " : " }),
+        who(q) + (q === P ? " (vous)" : ""));
+    });
+    return h("ul", { class: "roles-list", "aria-label": "Répartition des rôles dans cette manche" }, items);
+  }
+
   function goBack() {
     if (state.phase === "play") {
       if (state.round === 1) { state.phase = "intro"; }
@@ -401,37 +457,79 @@
   }
 
   /* ------------------------------------------------------------------
-     Grille d'observation (observateur uniquement)
+     Grille d'observation (observateur uniquement) : tuiles + / -
      ------------------------------------------------------------------ */
   function renderGrid(round) {
+    var G = D.grille;
     var o = getObs(round);
+    var total = G.groupes.reduce(function (a, g) { return a + g.criteres.length; }, 0);
     var section = h("section", { class: "card", "aria-labelledby": "grid-title" });
-    var count = h("p", { class: "grid-count" });
+    var count = h("p", { class: "grid-count", role: "status", "aria-live": "polite" });
 
     function updateCount() {
       var n = Object.keys(o.grid).length;
-      count.textContent = n + " critère" + (n > 1 ? "s" : "") + " sur " + D.criteres.length + " renseigné" + (n > 1 ? "s" : "");
+      count.textContent = n === 0
+        ? "Aucun critère noté pour l’instant : c’est normal, rien n’est obligatoire."
+        : n + " critère" + (n > 1 ? "s" : "") + " noté" + (n > 1 ? "s" : "") + " sur " + total + ".";
+    }
+
+    function buildTile(c) {
+      var el = h("div", { class: "tile" });
+      var segs = [];
+      var gauge = h("div", { class: "gauge", "aria-hidden": "true" });
+      for (var i = 0; i < GAUGE_MAX; i++) {
+        var seg = h("i");
+        segs.push(seg);
+        gauge.appendChild(seg);
+      }
+      var cnt = h("span", { class: "tile-count", "aria-live": "polite", "aria-atomic": "true" });
+      var minus = h("button", { type: "button", class: "tile-btn tile-minus", "aria-label": "Retirer une observation : " + c.texte }, "\u2212");
+      var plus = h("button", { type: "button", class: "tile-btn tile-plus", "aria-label": "Ajouter une observation : " + c.texte }, "+");
+
+      function paint() {
+        var v = o.grid[c.id] || 0;
+        el.setAttribute("data-level", String(v));
+        cnt.textContent = "";
+        cnt.appendChild(h("span", { "aria-hidden": "true", text: v ? "\u00d7" + v : "0" }));
+        cnt.appendChild(h("span", { class: "sr-only", text: v === 0 ? "non noté" : "observé " + v + " fois" }));
+        segs.forEach(function (sg, idx) { sg.className = idx < v ? "on" : ""; });
+        minus.setAttribute("aria-disabled", v === 0 ? "true" : "false");
+        plus.setAttribute("aria-disabled", v >= GAUGE_MAX ? "true" : "false");
+      }
+
+      plus.addEventListener("click", function () {
+        var v = o.grid[c.id] || 0;
+        if (v >= GAUGE_MAX) { return; }
+        o.grid[c.id] = v + 1;
+        save(); paint(); updateCount();
+      });
+      minus.addEventListener("click", function () {
+        var v = o.grid[c.id] || 0;
+        if (v <= 0) { return; }
+        if (v === 1) { delete o.grid[c.id]; } else { o.grid[c.id] = v - 1; }
+        save(); paint(); updateCount();
+      });
+
+      el.appendChild(h("p", { class: "tile-label", text: c.texte }));
+      el.appendChild(h("div", { class: "tile-ctl" }, minus, cnt, plus));
+      el.appendChild(gauge);
+      paint();
+      return el;
     }
 
     section.appendChild(h("h2", { id: "grid-title", text: "Grille d’observation" }));
-    section.appendChild(h("p", { class: "muted", text: "Pour chaque critère, indiquez ce que vous avez observé. Vos notes restent uniquement sur cet appareil." }));
+    section.appendChild(h("p", { class: "callout" },
+      h("strong", { text: "Rien n’oblige à tout renseigner. " }),
+      "Notez uniquement ce que vous avez réellement observé : un critère laissé à 0 signifie simplement « pas noté »."));
+    section.appendChild(h("p", { class: "muted", text: "Touchez + à chaque fois que vous observez le comportement (1 fois : observé, 2 fois ou plus : comportement renforcé). Touchez − pour corriger. Vos notes restent uniquement sur cet appareil." }));
     section.appendChild(count);
+    section.appendChild(h("p", { class: "stem", text: G.amorce }));
 
-    D.criteres.forEach(function (texte, i) {
-      var group = h("div", { class: "seg-group" });
-      D.niveaux.forEach(function (n) {
-        group.appendChild(h("label", { class: "seg" },
-          h("input", {
-            type: "radio",
-            name: "crit-" + round + "-" + i,
-            value: n.value,
-            checked: o.grid[i] === n.value,
-            onchange: function () { o.grid[i] = n.value; save(); updateCount(); }
-          }),
-          h("span", { text: n.label })));
-      });
-      section.appendChild(h("fieldset", { class: "crit" },
-        h("legend", { text: (i + 1) + ". " + texte }), group));
+    G.groupes.forEach(function (g) {
+      var gid = "grp-" + round + "-" + g.id;
+      section.appendChild(h("div", { class: "tile-group", role: "group", "aria-labelledby": gid },
+        h("h3", { id: gid, text: g.titre }),
+        h("div", { class: "tiles" }, g.criteres.map(buildTile))));
     });
 
     D.champsObservateur.forEach(function (c) {
@@ -616,7 +714,7 @@
     var wrap = h("div", { class: "view" });
     wrap.appendChild(h("h1", { text: D.titre }));
     append(wrap, storageWarning());
-    wrap.appendChild(h("p", { class: "role-label muted", text: "Vous êtes le participant " + P + "." }));
+    wrap.appendChild(h("p", { class: "muted", text: (NAMES[P] ? "Bonjour " + NAMES[P] + ", vous" : "Vous") + " êtes le participant " + P + "." }));
 
     wrap.appendChild(h("section", { class: "card", "aria-labelledby": "intro-obj" },
       h("h2", { id: "intro-obj", text: "Ce que vous allez pratiquer" }),
@@ -661,6 +759,7 @@
       h("p", { class: "eyebrow", text: "Manche " + round + " sur " + TOTAL }),
       h("h1", { text: sc.titre })));
     wrap.appendChild(roleCard(role));
+    wrap.appendChild(rolesList(round));
     wrap.appendChild(h("p", { class: "muted small", text: rhythmText() }));
     wrap.appendChild(renderTimer());
 
@@ -681,7 +780,7 @@
       h("button", {
         type: "button", class: "btn btn-primary",
         onclick: function () { state.phase = "debrief"; save(); render(true); }
-      }, "Terminer la manche"),
+      }, "Passer au débriefing"),
       backButton()));
     return wrap;
   }

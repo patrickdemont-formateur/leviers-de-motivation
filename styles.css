@@ -56,6 +56,7 @@ a { color: var(--blue); }
 }
 
 .container { width: 100%; max-width: 46rem; margin: 0 auto; padding: 0 1rem; }
+.container.container-wide { max-width: 72rem; }
 
 .skip-link {
   position: absolute; left: .5rem; top: -4rem;
@@ -192,31 +193,73 @@ main { padding-top: 1.25rem; padding-bottom: 2rem; min-height: 60vh; }
 .timer-card.is-warning, .timer-card.is-ended { border-left-color: var(--orange-line); border-color: var(--orange-line); background: var(--orange-soft); }
 .timer-card.is-warning .timer-display, .timer-card.is-ended .timer-display { color: var(--orange); }
 
-/* ---------- Grille d'observation ---------- */
-.crit {
-  margin: 0 0 .9rem; padding: .75rem .8rem .8rem;
-  border: 1px solid var(--border); border-radius: 10px; background: #fff;
-  min-width: 0;
+/* ---------- Grille d'observation : tuiles + / - ---------- */
+.sr-only {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
 }
-.crit legend { padding: 0 .4rem; font-weight: 600; }
-.seg-group { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; }
-.seg { position: relative; display: block; }
-.seg input {
-  position: absolute; inset: 0; width: 100%; height: 100%;
-  margin: 0; opacity: 0; cursor: pointer;
-}
-.seg span {
-  display: flex; align-items: center; justify-content: center;
-  min-height: 44px; padding: .4rem .5rem; text-align: center;
-  border: 2px solid var(--border); border-radius: 10px;
-  background: #fff; font-size: .95rem; line-height: 1.25;
-}
-.seg input:checked + span {
-  background: var(--blue); border-color: var(--blue); color: #fff; font-weight: 700;
-}
-.seg input:checked + span::before { content: "✓\00a0"; }
-.seg input:focus-visible + span { outline: 3px solid var(--blue); outline-offset: 3px; }
 .grid-count { color: var(--muted); font-weight: 600; }
+.stem { margin: 1rem 0 .25rem; font-size: 1.15rem; font-weight: 700; color: var(--blue-dark); }
+.tile-group { margin: 0 0 1rem; }
+.tile-group h3 { margin: .75rem 0 .5rem; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr)); gap: .6rem; }
+.tile {
+  display: flex; flex-direction: column; gap: .5rem; padding: .6rem;
+  background: #fff; border: 2px solid var(--border); border-radius: 10px;
+}
+.tile-label { margin: 0; flex: 1; font-weight: 600; font-size: .95rem; line-height: 1.25; }
+.tile-ctl { display: grid; grid-template-columns: 44px 1fr 44px; gap: .3rem; align-items: center; }
+.tile-count { text-align: center; font-weight: 800; font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+.tile-btn {
+  min-width: 44px; min-height: 44px; padding: 0; font: inherit; font-size: 1.6rem; font-weight: 700;
+  line-height: 1; border-radius: 10px; cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.tile-plus { background: var(--teal); color: #fff; border: 2px solid var(--teal); }
+.tile-minus { background: #fff; color: var(--slate); border: 2px solid var(--slate); }
+.tile-btn[aria-disabled="true"] { opacity: .35; cursor: default; }
+.gauge { display: flex; gap: 3px; height: 10px; }
+.gauge i { flex: 1; border-radius: 3px; background: #dbe3ec; }
+.tile[data-level="1"] { background: #eef8f7; border-color: #7cc6c0; }
+.tile[data-level="2"] { background: #e1f3f1; border-color: #3aa8a0; }
+.tile[data-level="3"] { background: #d3eeeb; border-color: var(--teal); }
+.tile[data-level="4"] { background: #c3e7e3; border-color: #095e5a; }
+.tile[data-level="5"] { background: #b3dfda; border-color: #07423f; }
+.tile[data-level="1"] .gauge i.on { background: #7cc6c0; }
+.tile[data-level="2"] .gauge i.on { background: #3aa8a0; }
+.tile[data-level="3"] .gauge i.on { background: var(--teal); }
+.tile[data-level="4"] .gauge i.on { background: #095e5a; }
+.tile[data-level="5"] .gauge i.on { background: #07423f; }
+
+/* ---------- Rôles de la manche ---------- */
+.roles-list { list-style: none; display: flex; flex-wrap: wrap; gap: .4rem .5rem; padding: 0; margin: 0; }
+.roles-list li { margin: 0; padding: .3rem .7rem; background: #fff; border: 1px solid var(--border); border-radius: 999px; font-size: .95rem; }
+
+/* ---------- Espace animateur ---------- */
+.header-left { display: flex; align-items: center; gap: .75rem; }
+.icon-btn {
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: 44px; height: 44px; border: 2px solid rgba(255, 255, 255, .75); border-radius: 10px; color: #fff;
+}
+.icon-btn:hover { background: rgba(255, 255, 255, .18); }
+.icon-btn[aria-current="page"] { background: rgba(255, 255, 255, .25); }
+.icon-btn svg { width: 26px; height: 26px; }
+.site-header :focus-visible { outline-color: #fff; }
+
+.access-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 1rem; }
+.access-tile { display: flex; flex-direction: column; gap: .5rem; border-top: 6px solid var(--blue); }
+.access-tile h2 { margin: 0; }
+.access-name { margin: 0; font-size: 1.6rem; font-weight: 800; color: var(--blue-dark); line-height: 1.2; overflow-wrap: anywhere; }
+.access-name-empty { font-size: 1.05rem; font-weight: 500; color: var(--muted); }
+.qr-box { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: .4rem; width: 100%; max-width: 17rem; margin: 0 auto; }
+.qr-svg { display: block; width: 100%; height: auto; }
+.url-input { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .85rem; }
+.access-tile .field { margin-bottom: .25rem; }
+.qr-dialog { width: min(94vw, 38rem); text-align: center; }
+.qr-box-large { max-width: min(80vw, 62vh, 32rem); }
+.url-text { margin: .75rem 0; font-size: .85rem; color: var(--muted); overflow-wrap: anywhere; }
+.qr-dialog .dialog-actions { justify-content: center; }
+.is-error { color: var(--orange); font-weight: 700; }
+.notes summary { cursor: pointer; font-weight: 700; color: var(--blue-dark); min-height: 44px; display: flex; align-items: center; }
 
 /* ---------- Formulaires ---------- */
 .field { margin-bottom: 1rem; }
@@ -271,7 +314,6 @@ dialog h2 { margin-top: 0; }
 @media (max-width: 560px) {
   body { font-size: 1rem; }
   h1 { font-size: 1.45rem; }
-  .seg-group { grid-template-columns: 1fr; }
   .oiia, .familles { grid-template-columns: 1fr; }
   .actions .btn { flex: 1 1 100%; }
   .dialog-actions .btn { flex: 1 1 100%; }

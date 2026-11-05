@@ -257,29 +257,35 @@ window.MOTIV_DATA = {
   ],
 
   /* ----------------------------------------------------------------------
-     GRILLE D'OBSERVATION
+     GRILLE D'OBSERVATION (13 critères regroupés en 4 thèmes)
      ---------------------------------------------------------------------- */
-  niveaux: [
-    { value: "non",     label: "Non observé" },
-    { value: "partiel", label: "Partiellement observé" },
-    { value: "clair",   label: "Clairement observé" }
-  ],
-
-  criteres: [
-    "Le manager part des faits.",
-    "Le manager distingue faits et interprétations.",
-    "Le manager pose des questions ouvertes.",
-    "Le manager explore plusieurs hypothèses.",
-    "Le manager demande des exemples.",
-    "Le manager reformule.",
-    "Le manager reconnaît le point de vue du collaborateur.",
-    "Le manager évite de projeter ses propres motivations.",
-    "Le manager vérifie ses hypothèses.",
-    "Le manager hiérarchise les leviers.",
-    "Le manager distingue besoin et solution.",
-    "Le manager évite les promesses prématurées.",
-    "Le manager identifie une action réaliste."
-  ],
+  grille: {
+    max: 5,                       /* nombre maximal d'observations par critère (jauge) */
+    amorce: "Le manager…",        /* affichée une seule fois : les critères commencent par un verbe */
+    groupes: [
+      { id: "faits", titre: "Partir des faits", criteres: [
+        { id: "c1", texte: "Part des faits" },
+        { id: "c2", texte: "Distingue faits et interprétations" }
+      ] },
+      { id: "questions", titre: "Questionner et écouter", criteres: [
+        { id: "c3", texte: "Pose des questions ouvertes" },
+        { id: "c5", texte: "Demande des exemples" },
+        { id: "c6", texte: "Reformule" },
+        { id: "c7", texte: "Reconnaît le point de vue du collaborateur" },
+        { id: "c8", texte: "Évite de projeter ses propres motivations" }
+      ] },
+      { id: "explorer", titre: "Explorer et vérifier", criteres: [
+        { id: "c4", texte: "Explore plusieurs hypothèses" },
+        { id: "c9", texte: "Vérifie ses hypothèses" },
+        { id: "c10", texte: "Hiérarchise les leviers" },
+        { id: "c11", texte: "Distingue besoin et solution" }
+      ] },
+      { id: "agir", titre: "Conclure et agir", criteres: [
+        { id: "c12", texte: "Évite les promesses prématurées" },
+        { id: "c13", texte: "Identifie une action réaliste" }
+      ] }
+    ]
+  },
 
   champsObservateur: [
     { id: "best",      label: "Question la plus efficace" },
